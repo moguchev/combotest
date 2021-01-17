@@ -72,7 +72,7 @@ load_loop:
 
 			chunk = append(chunk, e)
 
-			if (len(chunk)) == int(chunkSize) {
+			if (len(chunk)) == int(chunkSize) { // отправляем чанк
 				if err := l.storage.InsertEvents(context.TODO(), chunk); err != nil {
 					log.WithError(err).Error("insert")
 				}
@@ -81,7 +81,7 @@ load_loop:
 			}
 		}
 	}
-
+	// отправляем что осталось
 	if len(chunk) > 0 {
 		if err := l.storage.InsertEvents(context.TODO(), chunk); err != nil {
 			log.WithError(err).Error("insert last")

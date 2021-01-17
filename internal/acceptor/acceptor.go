@@ -88,7 +88,7 @@ Accept:
 			go a.handleRequest(conn, a.cfg.Timeout) // обрабатываем соединение
 		case err := <-eCh: // ошибка принятия соединения
 			a.log.WithError(err).Error("accept error")
-			break Accept
+			continue Accept
 		}
 	}
 	return nil
@@ -116,10 +116,9 @@ func (a *Acceptor) scan(ch chan<- scanResponse, wg *sync.WaitGroup, sc *bufio.Sc
 	var res scanResponse
 
 	if !sc.Scan() {
+		res.Error = io.EOF
 		if err := sc.Err(); err != nil {
 			res.Error = err
-		} else {
-			res.Error = io.EOF
 		}
 		ch <- res
 		return

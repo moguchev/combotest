@@ -10,7 +10,7 @@ type EventPool interface {
 	Push(e models.Event)
 	// Pop - достать событие из пула
 	Pop() (models.Event, bool)
-
+	// Close - закрытие на вставку
 	Close()
 }
 
