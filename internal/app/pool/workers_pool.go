@@ -1,15 +1,8 @@
 package pool
 
-/*
-#cgo CFLAGS: -I${SRCDIR}/../../dist/closessl
-#cgo LDFLAGS: -L${SRCDIR}/../../dist/closessl -lclosessl
-
-#include <closessl.h>
-*/
-import "C"
 import (
+	"combotest/internal/app/closessl"
 	"sync"
-	"unsafe"
 
 	"github.com/sirupsen/logrus"
 )
@@ -83,11 +76,7 @@ func (wp *encryptWorkersPool) worker() {
 
 			data := []byte(event.Message) // copy of event.Message
 
-			// call C function:
-			// void closessl_encrypt(uint8_t *buf, size_t len);
-			C.closessl_encrypt((*C.uint8_t)(unsafe.Pointer(&data[0])), C.size_t(len(data)))
-
-			event.Message = string(data)
+			event.Message = string(closessl.Encrypt(data))
 
 			wp.done.Push(event)
 		}

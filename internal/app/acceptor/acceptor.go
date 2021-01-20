@@ -2,8 +2,8 @@ package acceptor
 
 import (
 	"bufio"
+	"combotest/internal/app/pool"
 	"combotest/internal/models"
-	"combotest/internal/pool"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -131,7 +131,6 @@ func (a *Acceptor) scan(ch chan<- scanResponse, wg *sync.WaitGroup, sc *bufio.Sc
 	}
 
 	ch <- res
-	return
 }
 
 // Handles incoming requests.

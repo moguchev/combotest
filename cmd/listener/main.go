@@ -1,10 +1,9 @@
 package main
 
 import (
-	"combotest/internal/acceptor"
-	"combotest/internal/loader"
-	"combotest/internal/models"
-	"combotest/internal/pool"
+	"combotest/internal/app/acceptor"
+	"combotest/internal/app/loader"
+	"combotest/internal/app/pool"
 	"combotest/internal/repository"
 	"context"
 	"os"
@@ -38,11 +37,6 @@ var (
 	WAIT_EVENT_TIMEOUT = 5 * time.Second
 )
 
-type ScanResponse struct {
-	Event models.Event
-	Error error
-}
-
 var log = &logrus.Logger{
 	Out:       os.Stderr,
 	Formatter: new(logrus.TextFormatter),
@@ -71,12 +65,16 @@ func main() {
 	acceptr := acceptor.NewAcceptor(acfg, toEncryptEventsPool, log) // обработчик входящих событий
 
 	// Data base
-	cctx, _ := context.WithTimeout(ctx, 10*time.Second)
+	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	client, err := mongo.Connect(cctx, options.Client().ApplyURI(MONGODB_URI))
 	if err != nil {
 		log.WithError(err).Fatal("connect to db")
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		if e := client.Disconnect(ctx); e != nil {
+			log.WithError(err).Error("disconect")
+		}
+	}()
 
 	db := client.Database(DB_NAME)
 
@@ -118,6 +116,7 @@ func main() {
 
 		log.Debug("all stoped")
 
+		cancel()
 		return err
 	})
 

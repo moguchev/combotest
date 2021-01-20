@@ -4,9 +4,11 @@ go 1.15
 
 require (
 	github.com/aws/aws-sdk-go v1.36.28 // indirect
+	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.8.0
+	github.com/jmoiron/sqlx v1.2.0
 	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	go.mongodb.org/mongo-driver v1.4.4

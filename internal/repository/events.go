@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"combotest/internal/events"
+	"combotest/internal/interfaces/events"
 	"combotest/internal/models"
 	"context"
 	"fmt"
@@ -66,15 +66,15 @@ func (r *eventsRepository) UpdateEvent(ctx context.Context, id string, fields mo
 	update := bson.D{}
 
 	if fields.IsIncident != nil {
-		update = append(update, primitive.E{Key: "is_incident", Value: *fields.IsIncident})
+		update = append(update, bson.E{Key: "is_incident", Value: *fields.IsIncident})
 	}
 
 	if len(update) == 0 {
 		return nil
 	}
 
-	_, err = collection.UpdateOne(ctx,
-		bson.M{"_id": bson.M{"$eq": objID}},
+	filter := bson.M{"_id": bson.M{"$eq": objID}}
+	_, err = collection.UpdateOne(ctx, filter,
 		bson.M{"$set": update},
 	)
 	if err != nil {
@@ -84,7 +84,7 @@ func (r *eventsRepository) UpdateEvent(ctx context.Context, id string, fields mo
 	return nil
 }
 
-func getOptions(filter models.EventsFilter) *options.FindOptions {
+func getEventOptions(filter models.EventsFilter) *options.FindOptions {
 	opts := options.Find()
 	opts.SetSort(bson.D{{Key: "created_at", Value: -1}})
 
@@ -99,11 +99,11 @@ func getOptions(filter models.EventsFilter) *options.FindOptions {
 	return opts
 }
 
-func getFilter(filter models.EventsFilter) bson.M {
+func getEventFilter(filter models.EventsFilter) bson.M {
 	f := bson.M{}
 
 	if filter.Incident != nil {
-		f["is_insedent"] = *filter.Incident
+		f["is_incident"] = *filter.Incident
 	}
 
 	if filter.SystemName != nil {
@@ -131,8 +131,8 @@ func getFilter(filter models.EventsFilter) bson.M {
 func (r *eventsRepository) GetEvents(ctx context.Context, f models.EventsFilter) ([]models.Event, error) {
 	collection := r.db.Collection(eventCollection)
 
-	options := getOptions(f)
-	filter := getFilter(f)
+	options := getEventOptions(f)
+	filter := getEventFilter(f)
 
 	cursor, err := collection.Find(ctx, filter, options)
 	if err != nil {
@@ -140,7 +140,7 @@ func (r *eventsRepository) GetEvents(ctx context.Context, f models.EventsFilter)
 	}
 	defer cursor.Close(ctx)
 
-	events := []models.Event{}
+	events := make([]models.Event, 0, 2)
 
 	for cursor.Next(ctx) {
 		var event models.Event

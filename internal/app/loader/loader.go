@@ -1,9 +1,9 @@
 package loader
 
 import (
-	"combotest/internal/events"
+	"combotest/internal/app/pool"
+	"combotest/internal/interfaces/events"
 	"combotest/internal/models"
-	"combotest/internal/pool"
 	"context"
 	"sync"
 
