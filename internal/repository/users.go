@@ -130,6 +130,8 @@ func (r *usersRepository) GetUserByAuthInfo(ctx context.Context, a models.AuthIn
 
 	filter := bson.M{"login": a.Login, "password": a.Password}
 
+	fmt.Println(filter, usersCollection, a)
+
 	var user models.User
 	err := collection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {

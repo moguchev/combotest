@@ -2,10 +2,13 @@ package main
 
 import (
 	"combotest/internal/app/acceptor"
+	"combotest/internal/app/auth"
 	"combotest/internal/app/loader"
 	"combotest/internal/app/pool"
+	delivery "combotest/internal/delivery/http"
 	"combotest/internal/repository"
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,7 +18,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 )
 
 const (
@@ -31,10 +39,16 @@ const (
 
 	CHUNCK_SIZE uint32 = 2
 	LOADERS_NUM uint32 = 2
+
+	HASH_SALT = "salt"
+
+	API_ADDRESS = ":8080"
 )
 
 var (
+	EXPIRE_TIME        = 1 * time.Hour
 	WAIT_EVENT_TIMEOUT = 5 * time.Second
+	SECRET_KEY         *ecdsa.PrivateKey
 )
 
 var log = &logrus.Logger{
@@ -45,6 +59,11 @@ var log = &logrus.Logger{
 }
 
 func main() {
+	SECRET_KEY, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	ctx := context.Background()
 	// TODO: parse congig from file
 
@@ -65,8 +84,9 @@ func main() {
 	acceptr := acceptor.NewAcceptor(acfg, toEncryptEventsPool, log) // обработчик входящих событий
 
 	// Data base
-	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	client, err := mongo.Connect(cctx, options.Client().ApplyURI(MONGODB_URI))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(MONGODB_URI))
 	if err != nil {
 		log.WithError(err).Fatal("connect to db")
 	}
@@ -80,6 +100,30 @@ func main() {
 
 	// Repository
 	er := repository.NewEventsRepository(db)
+	ur := repository.NewUsersRepository(db)
+
+	// Usecases
+	authz := auth.NewAuthorizer(ur, HASH_SALT, SECRET_KEY, EXPIRE_TIME)
+
+	// Delivery
+	router := mux.NewRouter()
+
+	ah := delivery.AuthHandler{
+		Auth: authz,
+		Log:  log,
+	}
+	ah.SetAuthHandler(router)
+
+	server := &http.Server{
+		Addr:    API_ADDRESS,
+		Handler: router,
+	}
+
+	// eh := delivery.EventsHandler{}
+	// eh.SetEventsHandler(router)
+
+	// uh := delivery.UsersHandler{}
+	// uh.SetUsersHandler(router)
 
 	// загрузчик сохраняет события с зашифрованными данными
 	l := loader.NewLoader(encryptedEventsPool, er, log)
@@ -88,6 +132,18 @@ func main() {
 	group, _ := errgroup.WithContext(context.Background())
 
 	group.Go(acceptr.Run)
+
+	group.Go(func() error {
+		if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return err
+		}
+		return server.Shutdown(ctx)
+	})
+
+	group.Go(func() error {
+		<-ctx.Done()
+		return server.Shutdown(ctx)
+	})
 
 	group.Go(func() error {
 		stop := make(chan os.Signal, 1)

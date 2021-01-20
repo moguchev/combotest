@@ -16,16 +16,9 @@ type UsersHandler struct {
 }
 
 // SetUsersHandler will set handlers
-func SetUsersHandler(router *mux.Router) {
-	handler := &UsersHandler{}
-
-	router.HandleFunc("/users", handler.CreateUser).Methods(http.MethodPost)
+func (handler *UsersHandler) SetUsersHandler(router *mux.Router) {
 	router.HandleFunc("/users", handler.GetUsers).Methods(http.MethodGet)
 	router.HandleFunc(fmt.Sprintf("/users/{%s}", userIDParam), handler.ApproveUser).Methods(http.MethodPost)
-}
-
-func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-
 }
 
 func (h *UsersHandler) ApproveUser(w http.ResponseWriter, r *http.Request) {
