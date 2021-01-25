@@ -11,4 +11,5 @@ type Repository interface {
 	InsertEvents(ctx context.Context, es []models.Event) error
 	UpdateEvent(ctx context.Context, id string, fields models.UpdateEventFields) error
 	GetEvents(ctx context.Context, filter models.EventsFilter) ([]models.Event, error)
+	CountEvents(ctx context.Context, filter models.EventsFilter) (uint32, error)
 }

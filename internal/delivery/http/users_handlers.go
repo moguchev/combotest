@@ -24,7 +24,7 @@ type UsersHandler struct {
 // SetUsersHandler will set handlers
 func (handler *UsersHandler) SetUsersHandler(router *mux.Router) {
 	router.HandleFunc("/", handler.GetUsers).Methods(http.MethodGet)
-	router.HandleFunc(fmt.Sprintf("/{%s}", userIDParam), handler.ApproveUser).Methods(http.MethodPost)
+	router.HandleFunc(fmt.Sprintf("/{%s}", userIDParam), handler.ApproveUser).Methods(http.MethodPatch)
 }
 
 func (h *UsersHandler) ApproveUser(w http.ResponseWriter, r *http.Request) {

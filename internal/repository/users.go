@@ -90,11 +90,11 @@ func getUserOptions(filter models.UserFilter) *options.FindOptions {
 	opts := options.Find()
 
 	if filter.Limit != nil {
-		opts.SetLimit(int64(*filter.Limit))
+		opts = opts.SetLimit(int64(*filter.Limit))
 	}
 
 	if filter.Offset != nil {
-		opts.SetSkip(int64(*filter.Offset))
+		opts = opts.SetSkip(int64(*filter.Offset))
 	}
 
 	return opts

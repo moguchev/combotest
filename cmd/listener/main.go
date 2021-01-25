@@ -108,6 +108,7 @@ func main() {
 	authz := auth.NewAuthorizer(ur, HASH_SALT, SECRET_KEY, EXPIRE_TIME)
 	am := access.NewAccessManager(log, authz)
 	users := usecase.NewUserUscase(ur)
+	events := usecase.NewEventUscase(er)
 
 	// Delivery
 	ah := delivery.AuthHandler{
@@ -120,7 +121,10 @@ func main() {
 		Log:     log,
 	}
 
-	eh := delivery.EventsHandler{}
+	eh := delivery.EventsHandler{
+		EventsUC: events,
+		Log:      log,
+	}
 
 	// Routers
 	router := mux.NewRouter()

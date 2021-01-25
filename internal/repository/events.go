@@ -28,6 +28,8 @@ func NewEventsRepository(db *mongo.Database) events.Repository {
 func (r *eventsRepository) InsertEvent(ctx context.Context, e models.Event) error {
 	collection := r.db.Collection(eventCollection)
 
+	e.ID = primitive.NewObjectID().Hex()
+
 	_, err := collection.InsertOne(ctx, e)
 	if err != nil {
 		return fmt.Errorf("insert event: %w", err)
@@ -41,7 +43,7 @@ func (r *eventsRepository) InsertEvents(ctx context.Context, es []models.Event) 
 
 	docs := make([]interface{}, 0, len(es))
 	for i := range es {
-		es[i].ID = primitive.NewObjectID().String()
+		es[i].ID = primitive.NewObjectID().Hex()
 		docs = append(docs, es[i])
 	}
 
@@ -86,14 +88,14 @@ func (r *eventsRepository) UpdateEvent(ctx context.Context, id string, fields mo
 
 func getEventOptions(filter models.EventsFilter) *options.FindOptions {
 	opts := options.Find()
-	opts.SetSort(bson.D{{Key: "created_at", Value: -1}})
+	opts = opts.SetSort(bson.D{{Key: "created_at", Value: -1}})
 
 	if filter.Limit != nil {
-		opts.SetLimit(int64(*filter.Limit))
+		opts = opts.SetLimit(int64(*filter.Limit))
 	}
 
 	if filter.Offset != nil {
-		opts.SetSkip(int64(*filter.Offset))
+		opts = opts.SetSkip(int64(*filter.Offset))
 	}
 
 	return opts
@@ -155,4 +157,17 @@ func (r *eventsRepository) GetEvents(ctx context.Context, f models.EventsFilter)
 	}
 
 	return events, nil
+}
+
+func (r *eventsRepository) CountEvents(ctx context.Context, f models.EventsFilter) (uint32, error) {
+	collection := r.db.Collection(eventCollection)
+
+	filter := getEventFilter(f)
+
+	count, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return 0, fmt.Errorf("count users: %w", err)
+	}
+
+	return uint32(count), nil
 }
