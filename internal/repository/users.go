@@ -28,16 +28,30 @@ func NewUsersRepository(db *mongo.Database) users.Repository {
 func (r *usersRepository) CreateUser(ctx context.Context, cu models.CreateUser) (string, error) {
 	collection := r.db.Collection(usersCollection)
 
-	cu.ID = primitive.NewObjectID().String()
+	id := primitive.NewObjectID()
 
-	doc := interface{}(cu)
+	u := struct {
+		ID        primitive.ObjectID `json:"id"        bson:"_id"`
+		Role      models.Role        `json:"role"      bson:"role"`
+		Confirmed bool               `json:"confirmed" bson:"confirmed"`
+		Login     string             `json:"login"     bson:"login"`
+		Password  string             `json:"password"  bson:"password"`
+	}{
+		ID:        id,
+		Role:      cu.Role,
+		Confirmed: false,
+		Login:     cu.Login,
+		Password:  cu.Password,
+	}
+
+	doc := interface{}(u)
 
 	_, err := collection.InsertOne(ctx, doc)
 	if err != nil {
 		return "", fmt.Errorf("insert events: %w", err)
 	}
 
-	return cu.ID, nil
+	return id.Hex(), nil
 }
 
 func (r *usersRepository) ApproveUser(ctx context.Context, id string) error {
@@ -49,7 +63,7 @@ func (r *usersRepository) ApproveUser(ctx context.Context, id string) error {
 	}
 
 	filter := bson.M{"_id": bson.M{"$eq": objID}}
-	update := bson.D{{Key: "is_incident", Value: true}}
+	update := bson.D{{Key: "confirmed", Value: true}}
 
 	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": update})
 	if err != nil {

@@ -12,6 +12,10 @@ import (
 	"github.com/dgrijalva/jwt-go/v4"
 )
 
+const (
+	CookieTokeName = "token"
+)
+
 type Claims struct {
 	jwt.StandardClaims
 	Username string      `json:"username"`

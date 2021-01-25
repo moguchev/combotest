@@ -17,9 +17,9 @@ type EventsHandler struct {
 
 // SetEventsHandler will set handlers
 func (handler *EventsHandler) SetEventsHandler(router *mux.Router) {
-	router.HandleFunc("/events", handler.GetEvents).Methods(http.MethodGet)
-	router.HandleFunc(fmt.Sprintf("/events/{%s}", eventIDParam), handler.UpdateEvent).Methods(http.MethodPatch)
-	router.HandleFunc("/events/insedent", handler.SetIncedentInEvents).Methods(http.MethodPost)
+	router.HandleFunc("/", handler.GetEvents).Methods(http.MethodGet)
+	router.HandleFunc(fmt.Sprintf("/{%s}", eventIDParam), handler.UpdateEvent).Methods(http.MethodPatch)
+	router.HandleFunc("/incedent", handler.SetIncedentInEvents).Methods(http.MethodPost)
 }
 
 func (h *EventsHandler) GetEvents(w http.ResponseWriter, r *http.Request) {

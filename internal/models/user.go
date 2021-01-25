@@ -9,8 +9,8 @@ const (
 type Role string
 
 type User struct {
-	ID        string `json:"id"       bson:"_id"`
-	Role      Role   `json:"role"     bson:"role"`
+	ID        string `json:"id"        bson:"_id"`
+	Role      Role   `json:"role"      bson:"role"`
 	Confirmed bool   `json:"confirmed" bson:"confirmed"`
 }
 

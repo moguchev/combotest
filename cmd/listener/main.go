@@ -2,11 +2,13 @@ package main
 
 import (
 	"combotest/internal/app/acceptor"
+	"combotest/internal/app/access"
 	"combotest/internal/app/auth"
 	"combotest/internal/app/loader"
 	"combotest/internal/app/pool"
 	delivery "combotest/internal/delivery/http"
 	"combotest/internal/repository"
+	"combotest/internal/usecase"
 	"context"
 	"net/http"
 	"os"
@@ -104,26 +106,43 @@ func main() {
 
 	// Usecases
 	authz := auth.NewAuthorizer(ur, HASH_SALT, SECRET_KEY, EXPIRE_TIME)
+	am := access.NewAccessManager(log, authz)
+	users := usecase.NewUserUscase(ur)
 
 	// Delivery
-	router := mux.NewRouter()
-
 	ah := delivery.AuthHandler{
 		Auth: authz,
 		Log:  log,
 	}
-	ah.SetAuthHandler(router)
+
+	uh := delivery.UsersHandler{
+		UsersUC: users,
+		Log:     log,
+	}
+
+	eh := delivery.EventsHandler{}
+
+	// Routers
+	router := mux.NewRouter()
+
+	authRouter := router.PathPrefix("/auth").Subrouter()
+	ah.SetAuthHandler(authRouter)
+
+	usersRouter := router.PathPrefix("/users").Subrouter()
+	uh.SetUsersHandler(usersRouter)
+
+	eventsRouter := router.PathPrefix("/events").Subrouter()
+	eh.SetEventsHandler(eventsRouter)
+
+	// Middlewares
+	eventsRouter.Use(am.AccessMiddleware)
+	usersRouter.Use(am.AccessMiddleware)
 
 	server := &http.Server{
 		Addr:    API_ADDRESS,
 		Handler: router,
+		// TODO: set properties from config
 	}
-
-	// eh := delivery.EventsHandler{}
-	// eh.SetEventsHandler(router)
-
-	// uh := delivery.UsersHandler{}
-	// uh.SetUsersHandler(router)
 
 	// загрузчик сохраняет события с зашифрованными данными
 	l := loader.NewLoader(encryptedEventsPool, er, log)

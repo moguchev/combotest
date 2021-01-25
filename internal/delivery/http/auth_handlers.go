@@ -7,13 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	CookieTokeName = "token"
 )
 
 // AuthHandler
@@ -23,20 +20,37 @@ type AuthHandler struct {
 }
 
 func (h *AuthHandler) SetAuthHandler(router *mux.Router) {
-	router.HandleFunc("/user", h.SignUp).Methods(http.MethodPost)
-	router.HandleFunc("/auth", h.SignIn).Methods(http.MethodPost)
-	// тест
-	router.HandleFunc("/", h.I).Methods(http.MethodGet)
+	router.HandleFunc("/user", h.SignUp).Methods(http.MethodPost) // регистрация
+	router.HandleFunc("/", h.SignIn).Methods(http.MethodPost)     // вход
+	router.HandleFunc("/", h.SignOut).Methods(http.MethodDelete)
+	router.HandleFunc("/i", h.I).Methods(http.MethodGet) // информация о себе
 }
 
 func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
+	log := h.Log.WithField("handler", "SignUp")
+	ctx := r.Context()
 
+	var newUser models.CreateUser
+	err := json.NewDecoder(r.Body).Decode(&newUser)
+	if err != nil {
+		log.WithError(err).Error("decode body: %w", err)
+		utils.RespondWithError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = h.Auth.SignUp(ctx, newUser); err != nil { // TODO switch errors: already exists, internal
+		log.WithError(err).Error("sign up: %w", err)
+		utils.RespondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *AuthHandler) I(w http.ResponseWriter, r *http.Request) {
 	log := h.Log.WithField("handler", "I")
 
-	c, err := r.Cookie(CookieTokeName)
+	c, err := r.Cookie(auth.CookieTokeName)
 	if err != nil {
 		log.WithError(err).Error("get token from cookie")
 		if err == http.ErrNoCookie {
@@ -47,15 +61,20 @@ func (h *AuthHandler) I(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tknStr := c.Value
-
-	claims, err := h.Auth.GetClaimsFromToken(tknStr)
+	claims, err := h.Auth.GetClaimsFromToken(c.Value)
 	if err != nil {
 		log.WithError(err).Error("get claims")
 		utils.RespondWithError(w, http.StatusUnauthorized, fmt.Errorf("unauthorized"))
+		return
 	}
 
-	w.Write([]byte(fmt.Sprintf("Welcome %s-%s!", claims.Username, claims.Role)))
+	user := models.User{
+		ID:        claims.Username,
+		Role:      claims.Role,
+		Confirmed: true, // только подтвержденые сотрудники имеют доступ
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, user)
 }
 
 func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
@@ -71,17 +90,29 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	token, exp, err := h.Auth.SignIn(r.Context(), info)
 	if err != nil {
-		log.WithError(err).Errorf("sign in: %w", err)
+		log.WithError(err).Error("sign in: %w", err)
 		utils.RespondWithError(w, http.StatusUnauthorized, err)
 	}
 
-	fmt.Println("token:", token)
-
 	http.SetCookie(w, &http.Cookie{
-		Name:    CookieTokeName,
-		Value:   token,
-		Expires: exp,
-		// HttpOnly:
+		Name:     auth.CookieTokeName,
+		Value:    token,
+		Expires:  exp,
+		Path:     "/",
+		HttpOnly: true,
+		//Secure:   true,
+
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *AuthHandler) SignOut(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:    auth.CookieTokeName,
+		MaxAge:  -1,
+		Expires: time.Now().Add(-100 * time.Hour), // Set expires for older versions of IE
+		Path:    "/",
 	})
 
 	w.WriteHeader(http.StatusOK)
