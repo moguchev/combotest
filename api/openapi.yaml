@@ -1,0 +1,258 @@
+openapi: 3.0.1
+info:
+  title: combotest
+  description: 'combotest'
+  version: 1.0.0
+servers:
+- url: localhost:4000
+tags:
+- name: auth
+  description: авторизация
+- name: users
+  description: пользователи
+- name: events
+  description: события
+
+paths:
+  /auth/:
+    post:
+      tags:
+      - auth
+      summary: вход по логину и паролю
+      requestBody:
+        description: Claims
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Claims'
+        required: true
+      responses:
+        200:
+          description: авторизация успешна, куки выставлены
+          content: {}
+    delete:
+      tags:
+      - auth
+      summary: выход
+      responses:
+        200:
+          description: авторизационные куки убраны
+          content: {}
+  /auth/i:    
+    get:
+      tags:
+      - auth
+      summary: получение информации о своей учетной записи
+      
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /auth/user:
+    post:
+      tags:
+      - auth
+      summary: регистрация пользователя
+      requestBody:
+        description: Claims
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+        required: true
+      responses:
+        201:
+          description: авторизация успешна, куки выставлены
+          content: {}
+       
+  /users/:
+    get:
+      tags:
+      - users
+      summary: получение пользователей
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Users'
+      
+  /users/{user_id}:
+    patch:
+      tags:
+      - users
+      summary: подтверждение регистрации пользователя
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content: {}
+          
+  /events/:
+    get:
+      tags:
+      - events
+      summary: получение событий
+      parameters:
+        - name: limit
+          in: query
+          description: Limits the number of items on a page
+          schema:
+            type: integer
+            
+        - name: offset
+          in: query
+          description: Specifies the page number of the artists to be displayed
+          schema:
+            type: integer
+            
+        - name: incident
+          in: query
+          description: инцидент
+          schema:
+            type: boolean
+            
+        - name: event_id
+          in: query
+          description: event_id cобытия
+          schema:
+            type: integer
+            
+        - name: system_name
+          in: query
+          description: system_name события
+          schema:
+            type: string
+        
+        - name: created_at_after
+          in: query
+          description: created_at_after событие
+          schema:
+            type: string
+            
+        - name: created_at_before
+          in: query
+          description: created_at_before событие
+          schema:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Events'
+                
+  /events/incedent:
+    post:
+      tags:
+      - events
+      summary: пометка событий как инцидент
+      requestBody:
+        description: Claims
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Incedent'
+      responses:
+        200:
+          description: successful operation
+          content: {}
+              
+components:
+  schemas:
+    Claims:
+      type: object
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+      required:
+      - login
+      - password
+      
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - analysts
+        confirmed:
+          type: boolean
+          
+    Users:
+      type: object
+      properties:
+        total:
+          type: integer
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+            
+    CreateUser:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            role:
+              type: string
+              enum:
+              - admin
+              - analysts
+        auth:
+          $ref: '#/components/schemas/Claims'
+      required:
+      - user
+      - auth
+        
+        
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+        EventID:
+          type: string
+        Created:
+          type: string
+        SystemName:
+          type: string
+          
+        
+    Events:
+      type: object
+      properties:
+        total:
+          type: integer
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+            
+            
+    Incedent:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            
+
+

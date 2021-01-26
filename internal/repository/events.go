@@ -5,6 +5,7 @@ import (
 	"combotest/internal/models"
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -40,11 +41,26 @@ func (r *eventsRepository) InsertEvent(ctx context.Context, e models.Event) erro
 
 func (r *eventsRepository) InsertEvents(ctx context.Context, es []models.Event) error {
 	collection := r.db.Collection(eventCollection)
-
+	no := false
 	docs := make([]interface{}, 0, len(es))
 	for i := range es {
-		es[i].ID = primitive.NewObjectID().Hex()
-		docs = append(docs, es[i])
+		ev := struct {
+			ID         primitive.ObjectID `json:"id"                    bson:"_id"`
+			EventID    int                `json:"EventID"               bson:"event_id"`
+			Created    time.Time          `json:"Created"               bson:"created_at"`
+			SystemName string             `json:"SystemName"            bson:"system_name"`
+			Message    string             `json:"Message"               bson:"message"`
+			IsIncident *bool              `json:"is_incident,omitempty" bson:"is_incident,omitempty"`
+		}{
+			ID:         primitive.NewObjectID(),
+			EventID:    es[i].EventID,
+			Created:    es[i].Created,
+			SystemName: es[i].SystemName,
+			Message:    es[i].Message,
+			IsIncident: &no,
+		}
+
+		docs = append(docs, ev)
 	}
 
 	res, err := collection.InsertMany(ctx, docs)

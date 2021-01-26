@@ -45,3 +45,30 @@ func (u *evensUsecase) GetEvents(ctx context.Context, filter models.EventsFilter
 
 	return total, events, nil
 }
+
+func (u *evensUsecase) SetIncedent(ctx context.Context, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	user, ok := access.GetUserFromCtx(ctx)
+	if !ok {
+		return fmt.Errorf("no user in ctx")
+	}
+
+	if user.Role != models.AnalystRole || !user.Confirmed {
+		return fmt.Errorf("permission denied")
+	}
+
+	yes := true
+	for i := range ids {
+		e := u.repo.UpdateEvent(ctx, ids[i], models.UpdateEventFields{
+			IsIncident: &yes,
+		})
+		if e != nil {
+			return fmt.Errorf("set incedent event %s failed: %w", ids[i], e)
+		}
+	}
+
+	return nil
+}

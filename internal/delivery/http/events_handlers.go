@@ -4,7 +4,7 @@ import (
 	"combotest/internal/interfaces/events"
 	"combotest/internal/models"
 	"combotest/pkg/utils"
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -27,7 +27,7 @@ type EventsHandler struct {
 // SetEventsHandler will set handlers
 func (handler *EventsHandler) SetEventsHandler(router *mux.Router) {
 	router.HandleFunc("/", handler.GetEvents).Methods(http.MethodGet)
-	router.HandleFunc(fmt.Sprintf("/{%s}", eventIDParam), handler.UpdateEvent).Methods(http.MethodPatch)
+	//router.HandleFunc(fmt.Sprintf("/{%s}", eventIDParam), handler.UpdateEvent).Methods(http.MethodPatch)
 	router.HandleFunc("/incedent", handler.SetIncedentInEvents).Methods(http.MethodPost)
 }
 
@@ -130,10 +130,27 @@ func (h *EventsHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 	utils.RespondWithJSON(w, http.StatusOK, Response{Total: total, Events: events})
 }
 
-func (h *EventsHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
-
+type SetIncedentRequest struct {
+	IDs []string `json:"ids"`
 }
 
 func (h *EventsHandler) SetIncedentInEvents(w http.ResponseWriter, r *http.Request) {
+	log := h.Log.WithField("handler", "GetEvents")
+	ctx := r.Context()
 
+	request := SetIncedentRequest{}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		log.WithError(err).Error("read body")
+		utils.RespondWithError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = h.EventsUC.SetIncedent(ctx, request.IDs); err != nil {
+		log.WithError(err).Error("update")
+		utils.RespondWithError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
