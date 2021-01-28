@@ -60,3 +60,8 @@
 - `agent.elf` и `agent.macho` -- тестовые агенты для отладки системы, скомпилированные для 
    Linux и MacOS соответственно. Могут быть использованы для генерации поступающих от агентов
    событий. Использование: `agent.elf --help`
+
+### Запуск
+- `git clone https://github.com/moguchev/combotest.git`
+- `cd combotest`
+- `docker-compose up`
