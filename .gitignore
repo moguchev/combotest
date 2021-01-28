@@ -1,2 +1,3 @@
 /.idea
 /cmd/listener/listener
+.docker

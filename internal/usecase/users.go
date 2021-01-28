@@ -17,6 +17,8 @@ func NewUserUscase(r users.Repository) users.Usecase {
 }
 
 func (u *userUsecase) CreateUser(ctx context.Context, cu models.CreateUser) (models.User, error) {
+	cu.Confirmed = false // safe
+
 	id, err := u.repo.CreateUser(ctx, cu)
 	if err != nil {
 		return models.User{}, fmt.Errorf("create user: %w", err)

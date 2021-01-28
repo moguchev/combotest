@@ -1,0 +1,37 @@
+version: '3.7'
+services:
+  database:
+    image: mongo:latest
+    container_name: 'mongodb-container'
+    hostname: mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin-user
+      - MONGO_INITDB_ROOT_PASSWORD=admin-password
+      - MONGO_INITDB_DATABASE=admin
+    volumes:
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init-js:ro
+      - ./.docker/mongodb/data/db:/data/db
+      - ./.docker/mongodb/dtat/log/:/var/log/mongodb/
+    ports:
+      - 27017:27017
+    networks:
+      - some-net
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 'server-container'
+    restart: unless-stopped
+    hostname: server
+    ports:
+      - 4000:4000/tcp
+      - 8080:8080
+    # command: /bin/listener
+    depends_on:
+      - database
+    networks:
+      - some-net
+networks:
+  some-net:
+    driver: bridge

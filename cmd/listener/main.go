@@ -7,6 +7,7 @@ import (
 	"combotest/internal/app/loader"
 	"combotest/internal/app/pool"
 	delivery "combotest/internal/delivery/http"
+	"combotest/internal/models"
 	"combotest/internal/repository"
 	"combotest/internal/usecase"
 	"context"
@@ -29,15 +30,15 @@ import (
 )
 
 const (
-	CONN_ACCEPTOR_HOST = "localhost"
+	CONN_ACCEPTOR_HOST = "server"
 	CONN_ACCEPTOR_PORT = "4000"
 	CONN_ACCEPTOR_TYPE = "tcp"
 
 	POOL_SIZE   = 1024
 	WORKERS_NUM = 3
 
-	MONGODB_URI = "mongodb://localhost:27017"
-	DB_NAME     = "test"
+	MONGODB_URI = "mongodb://admin-user:admin-password@database:27017"
+	DB_NAME     = "combotest"
 
 	CHUNCK_SIZE uint32 = 2
 	LOADERS_NUM uint32 = 2
@@ -99,6 +100,11 @@ func main() {
 	}()
 
 	db := client.Database(DB_NAME)
+	// ----------------------------------------------------------------
+	// не получилось в скрипте mongo-init.js сделать
+	db.CreateCollection(ctx, "events")
+	db.CreateCollection(ctx, "users")
+	// ----------------------------------------------------------------
 
 	// Repository
 	er := repository.NewEventsRepository(db)
@@ -109,6 +115,21 @@ func main() {
 	am := access.NewAccessManager(log, authz)
 	users := usecase.NewUserUscase(ur)
 	events := usecase.NewEventUscase(er)
+
+	// ----------------------------------------------------------------
+	// не получилось в скрипте mongo-init.js выполнить
+	ur.CreateUser(ctx, models.CreateUser{
+		User: models.User{
+			ID:        "600893550b1d7baabe1e01a4",
+			Role:      models.AdminRole,
+			Confirmed: true,
+		},
+		AuthInfo: models.AuthInfo{
+			Login:    "admin",
+			Password: authz.Hash("admin"),
+		},
+	})
+	// ----------------------------------------------------------------
 
 	// Delivery
 	ah := delivery.AuthHandler{

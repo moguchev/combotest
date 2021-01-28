@@ -13,7 +13,6 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/sirupsen/logrus v1.7.0
-	gitlab.services.mts.ru/libs/logger v1.1.1
 	go.mongodb.org/mongo-driver v1.4.4
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a

@@ -30,6 +30,13 @@ func (r *usersRepository) CreateUser(ctx context.Context, cu models.CreateUser) 
 
 	id := primitive.NewObjectID()
 
+	if cu.ID != "" {
+		old, err := primitive.ObjectIDFromHex(cu.ID)
+		if err != nil {
+			id = old
+		}
+	}
+
 	u := struct {
 		ID        primitive.ObjectID `json:"id"        bson:"_id"`
 		Role      models.Role        `json:"role"      bson:"role"`
@@ -39,7 +46,7 @@ func (r *usersRepository) CreateUser(ctx context.Context, cu models.CreateUser) 
 	}{
 		ID:        id,
 		Role:      cu.Role,
-		Confirmed: false,
+		Confirmed: cu.Confirmed,
 		Login:     cu.Login,
 		Password:  cu.Password,
 	}
